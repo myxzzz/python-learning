@@ -93,4 +93,25 @@ df['品牌内价格占比'] = df['价格'] / df['品牌总价']
 | :--- | :--- | :--- |
 | **更新整列** | `UPDATE table SET col = 0` | `df['col'] = 0` |
 | **条件更新** | `UPDATE table SET col = 1 WHERE col2 > 10` | `df.loc[df['col2'] > 10, 'col'] = 1` |
-| **多条件分支** | `CASE WHEN col>10 THEN 'A' ELSE 'B' END` | `np.where(df['col']>10, 'A', 'B')` |
+## 7. Pandas 与 SQL 数据库的直接交互
+
+> 💡 **直接执行 SQL**：Pandas 提供了直接连接数据库并执行 SQL 语句的功能。你可以把复杂的 SQL 查询结果直接读取为 DataFrame，或者把 DataFrame 直接存入数据库。
+
+| 操作目标 | Pandas 语法 | 说明 |
+| :--- | :--- | :--- |
+| **连接数据库** | `engine = create_engine('mysql+pymysql://user:pwd@host/db')` | 需要配合 `SQLAlchemy` 库创建连接引擎 |
+| **执行 SQL 读数据** | `df = pd.read_sql("SELECT * FROM table WHERE id > 10", con=engine)` | 直接把 SQL 查询结果变成 DataFrame |
+| **读整张表** | `df = pd.read_sql_table('table_name', con=engine)` | 相当于 `SELECT * FROM table_name` |
+| **将 DF 存入数据库** | `df.to_sql('new_table', con=engine, if_exists='append', index=False)` | `if_exists` 可选 'fail', 'replace', 'append' |
+
+### 💡 游标 (Cursor) 与 Pandas 的关系：
+如果你使用原生的 Python 数据库驱动（如 `pymysql`, `psycopg2`, `sqlite3`），你会用到**游标 (Cursor)** 来逐行获取数据：
+```python
+import pymysql
+conn = pymysql.connect(host='...', user='...', password='...', db='...')
+cursor = conn.cursor()
+cursor.execute("SELECT * FROM my_table")
+rows = cursor.fetchall() # 获取所有行
+```
+**但在 Pandas 中，你通常不需要手动写游标！** 
+Pandas 的 `pd.read_sql()` 底层自动帮你处理了游标的创建、执行、获取数据和关闭，直接一步到位返回一个 DataFrame，极其方便。
