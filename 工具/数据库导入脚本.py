@@ -62,6 +62,10 @@ def import_csvs_to_postgres(folder_path, schema="laptop", db_name="postgres"):
     finally:
         if conn: conn.close()
 
-# --- 以后你只需要改下面这两行 ---
-my_folder = r"c:\Users\Administrator\Desktop\三创赛-笔记本电脑数据-正式整理版\data\output"
-import_csvs_to_postgres(my_folder, schema="laptop") # 想换个地方存？改这里的 schema 即可
+# --- 自动识别当前文件夹并导入所有 CSV ---
+import os
+# 获取当前脚本文件所在的绝对路径
+my_folder = os.path.dirname(os.path.abspath(__file__)) 
+
+# 调用函数：会自动扫描 my_folder 下的所有 .csv 文件
+import_csvs_to_postgres(my_folder, schema="hot_drink_retail")
