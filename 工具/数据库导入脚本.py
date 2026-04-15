@@ -3,22 +3,34 @@ import pandas as pd
 import psycopg2
 from psycopg2.extras import execute_values
 
-def import_csvs_to_postgres(folder_path, schema="laptop", db_name="postgres"):
+# ================= Configuration / 配置 =================
+# 1. 想要导入的文件名（可选，不带或带 .csv 后缀）
+#    如果留空为 None，则导入文件夹下所有 CSV 文件
+TARGET_FILE = r"04_high_score_report.csv"  # e.g., "sales" 或 "sales.csv"
+
+# 2. 想要导入的数据库模式 (Schema)
+TARGET_SCHEMA = "hot_drink_retail"
+
+# 3. 数据库连接设置
+DB_CONFIG = {
+    'host': 'localhost',
+    'database': 'postgres',
+    'user': 'postgres',
+    'password': '',
+    'port': 5432
+}
+# ========================================================
+
+def import_csvs_to_postgres(folder_path, schema, db_params, target_file=None):
     """
     通用导入脚本
-    :param folder_path: CSV 文件夹路径
-    :param schema: 要导入的模式名 (如 laptop, phone 等)
-    :param db_name: 数据库名称
     """
-    print(f"📁 准备读取文件夹: {folder_path} -> 模式: {schema}")
-    
-    db_params = {
-        'host': 'localhost',
-        'database': db_name,
-        'user': 'postgres',
-        'password': '',  
-        'port': 5432
-    }
+    print(f"📁 文件夹路径: {folder_path}")
+    print(f"🗂️ 目标模式 (Schema): {schema}")
+    if target_file:
+        print(f"🎯 目标文件: {target_file}")
+    else:
+        print("📁 目标: 处理文件夹下所有 .csv 文件")
     
     conn = None
     try:
@@ -30,7 +42,16 @@ def import_csvs_to_postgres(folder_path, schema="laptop", db_name="postgres"):
         conn.commit()
         
         # 2. 扫描文件
-        csv_files = [f for f in os.listdir(folder_path) if f.endswith('.csv')]
+        if target_file:
+            csv_target = target_file if target_file.endswith('.csv') else target_file + '.csv'
+            full_path = os.path.join(folder_path, csv_target)
+            if not os.path.exists(full_path):
+                print(f"⚠️ 找不到指定文件: {csv_target}")
+                return
+            csv_files = [csv_target]
+        else:
+            csv_files = [f for f in os.listdir(folder_path) if f.endswith('.csv')]
+            
         if not csv_files:
             print("⚠️ 没找到 CSV 文件")
             return
@@ -54,18 +75,22 @@ def import_csvs_to_postgres(folder_path, schema="laptop", db_name="postgres"):
             execute_values(cursor, insert_sql, data)
             
             conn.commit()
-            print(f"✅ {table_name} 导入成功")
+            print(f"✅ 文件 [{file}] 已成功导入至 [{schema}.{table_name}]")
             
     except Exception as e:
-        print(f"❌ 错误: {e}")
+        print(f"❌ 运行出错: {e}")
         if conn: conn.rollback()
     finally:
         if conn: conn.close()
 
-# --- 自动识别当前文件夹并导入所有 CSV ---
-import os
-# 获取当前脚本文件所在的绝对路径
-my_folder = os.path.dirname(os.path.abspath(__file__)) 
+if __name__ == "__main__":
+    # 获取当前文件夹路径
+    current_folder = os.path.dirname(os.path.abspath(__file__)) 
 
-# 调用函数：会自动扫描 my_folder 下的所有 .csv 文件
-import_csvs_to_postgres(my_folder, schema="hot_drink_retail")
+    # 执行导入
+    import_csvs_to_postgres(
+        folder_path=current_folder, 
+        schema=TARGET_SCHEMA, 
+        db_params=DB_CONFIG, 
+        target_file=TARGET_FILE
+    )
