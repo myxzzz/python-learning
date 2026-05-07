@@ -88,7 +88,7 @@ def clean_hardware_data(df):
     
     # 无论是否执行了 if 里面的代码，最后都要返回 df
     return df
-    
+
 def practice_labeling(df):
     print('打标练习...')
 
@@ -135,9 +135,9 @@ def pratice_predict(df, mem_delta=10, stor_delta=0.05):
     c_map = {'入门级': 0.85, '中端': 0.95, '高端': 1.00}
     df['修正系数'] = df['档位档次'].map(c_map) 
     df['修正价格'] = df['预测价'] * df['修正系数']
-    
-     # --- 第三步：品牌收割（溢价层） ---
-    # 目标：只针对“品牌溢价款”，把它的涨幅再放大
+
+    # --- 第三步：品牌收割（溢价层） ---
+    # 目标：只针对"品牌溢价款"，把它的涨幅再放大
     # 代码提示：定义 mask -> 计算差值 -> loc 精准赋值
     brand_mask = df['市场标签'] == '品牌溢价款'
     price_diff = df['修正价格'] - df[t_price]
@@ -148,20 +148,36 @@ def pratice_predict(df, mem_delta=10, stor_delta=0.05):
     print("映射与加权完成！")
     return df
 
+def pratice_extracting_values(shadow_df):
+    """
+    实验区：尝试不同的单值提取方法
+    目标：提取特定品牌的硬件参数
+    """
+    print("\n" + "="*20 + " 提取值实验区 " + "="*20)
+
+    val = shadow_df.loc[shadow_df['硬盘类型'] == '内存', '平均影子价格'].iloc[0]
+    
+    return  val
+       
+
 
 
 if __name__ == "__main__":
+    from 跨表提数练习 import analyze_price_diff
+    
     raw_df, hardware_ratio_df, kmeans_df, shadow_df, premium_df = load_data()
     # 之前报错的原因：shadow_df（零件价格表）里没有“售价”列
     cleaned_df = clean_hardware_data(raw_df)
     labeled_df = practice_labeling(cleaned_df)
-    predicted_df = pratice_predict(labeled_df)
+    predicted_df = pratice_predict(labeled_df.copy())
     
     # 打印结果时，我们也用通用的列名
     price_col = '售价' if '售价' in labeled_df.columns else '中位数价格'
     mem_col = '内存(G)' if '内存(G)' in labeled_df.columns else '容量(GB)'
-    print(labeled_df.head())
-    print(predicted_df.head())
+    #labeled_df.to_csv(r"C:\Users\Administrator\Desktop\data_learn\python-learning\笔记本电脑\生成文件\labeled_data.csv", index=False, encoding='utf-8-sig')
+    #predicted_df.to_csv(r"C:\Users\Administrator\Desktop\data_learn\python-learning\笔记本电脑\生成文件\predicted_data.csv", index=False, encoding='utf-8-sig')
 
+    # 调用跨表提数练习中的分析函数
+    analyze_price_diff()
         
             
